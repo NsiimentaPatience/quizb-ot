@@ -1,0 +1,24 @@
+body {
+    background-image: url('/images/scroll2.jpg'); /* Replace with your image path */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+.container {
+    padding-top: 20px;
+}
+
+.btn-book {
+    background-color: #6e34eb;
+    color: white;
+    font-weight: bold;
+    border-radius: 25px;
+    padding: 10px 0;
+    text-align: center;
+}
+
+.btn-book:hover {
+    background-color: #5c2bc1; /* Slightly darker hover effect */
+    color: white;
+}

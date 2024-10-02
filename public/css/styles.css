@@ -1,0 +1,125 @@
+/* Banner Styles */
+.banner {
+    background-image: url('/images/scroll.jpg'); /* Adjust the path to your image */
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.carousel-item {
+    position: relative;
+    height: 100vh; /* Make sure it takes up full viewport height */
+}
+
+/* Adjust carousel-caption to be centered vertically within the carousel-item */
+.carousel-caption {
+    position: absolute;
+    bottom: 50%; /* Center vertically */
+    left: 50%;
+    transform: translate(-50%, 50%);
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background for readability */
+    padding: 20px; /* Increase padding for more space */
+    border-radius: 5px;
+    text-align: center;
+    z-index: 10; /* Make sure it's above other elements */
+    width: 80%; /* Adjust width as needed */
+    box-sizing: border-box;
+}
+
+/* Ensure carousel controls are visible and positioned correctly */
+.carousel-control-prev,
+.carousel-control-next {
+    z-index: 15; /* Ensure they are above the caption */
+    width: 5%; /* Adjust the size if needed */
+}
+
+.carousel-control-prev {
+    left: 0;
+}
+
+.carousel-control-next {
+    right: 0;
+}
+
+/* Transparent Column Styles */
+.text-center,
+.d-flex {
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    padding: 2rem;
+    border-radius: 16px; /* Rounded corners */
+}
+
+/* Card Styles */
+.card-container {
+    width: 100%;
+}
+
+.card {
+    background-color: #6e34eb; /* Deep Blue */
+    border-radius: 16px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+/* Logo Styles */
+.card-logo {
+    width: 100px; /* Adjust based on your logo size */
+    height: auto;
+    margin-bottom: 1rem; /* Space between logo and forms */
+}
+
+/* Form Styles */
+.card-body {
+    padding: 2rem;
+}
+
+/* Tabs */
+.nav-tabs .nav-link {
+    color: #FFD700; /* Gold */
+}
+
+/* Active Tab */
+.nav-tabs .nav-link.active {
+    background-color: #6e34eb; /* Deep Blue */
+}
+
+/* Form Controls */
+form {
+    background: rgba(255, 255, 255, 0.1); /* Transparent background */
+    padding: 1rem;
+    border-radius: 16px; /* Rounded corners for the form */
+}
+
+/* Input Areas */
+.form-control {
+    background-color: #000000; /* Black background for inputs */
+    color: #ffffff; /* White text for inputs */
+    border: 1px solid #000000; /* Black border for inputs */
+}
+
+/* Form Labels and Buttons */
+.form-label,
+.btn {
+    color: #FFD700; /* Gold */
+}
+.footer-custom {
+    background-color: rgba(0, 0, 0, 0.8) !important; /* Adjust the alpha value for transparency */
+}
+
+footer h5 {
+    font-weight: bold;
+}
+
+footer p, footer a {
+    color: white !important;
+}
+
+footer a:hover {
+    color: #ddd;
+    text-decoration: none;
+}

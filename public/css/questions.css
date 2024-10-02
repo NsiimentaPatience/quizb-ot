@@ -1,0 +1,55 @@
+body {
+    background-image: url('/images/bible.jpg'); /* Replace with your image path */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+.container {
+    padding-top: 20px;
+}
+
+.question-card {
+    background-color: #6e34eb;
+    max-width: 500px;
+    width: 100%;
+    border-radius: 15px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+.question-text {
+    color: gold;
+    font-weight: bold;
+}
+
+.btn-option {
+    background-color: white;
+    color: #6e34eb;
+    font-weight: bold;
+    max-width: 300px;
+    width: 100%;
+    border-radius: 25px;
+    padding: 10px 0;
+    text-align: center;
+    margin: 5px auto;
+}
+
+.btn-option:hover {
+    background-color: #f5f5f5;
+    color: #6e34eb;
+}
+
+h2 {
+    font-weight: bold;
+    color: white;
+}
+.correct {
+    background-color: green; /* Correct answer */
+    color: white;
+}
+.incorrect {
+    background-color: red; /* Incorrect answer */
+    color: white;
+}
