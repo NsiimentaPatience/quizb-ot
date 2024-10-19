@@ -5,11 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Verse extends Model
+class Question extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['chapter_id', 'verse_number', 'text'];
+    protected $fillable = ['verse_id', 'chapter_id', 'book_id', 'question', 'correct_answer', 'options'];
+
+    public function verse()
+    {
+        return $this->belongsTo(Verse::class);
+    }
 
     public function chapter()
     {
@@ -19,10 +24,5 @@ class Verse extends Model
     public function book()
     {
         return $this->belongsTo(Book::class);
-    }
-
-    public function questions()
-    {
-        return $this->hasMany(Question::class);
     }
 }

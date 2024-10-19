@@ -3,6 +3,8 @@ body {
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+    opacity: 1; /* Adjust opacity */
+    z-index: -1;
 }
 
 .container {
@@ -10,7 +12,7 @@ body {
 }
 
 .btn-book {
-    background-color: #6e34eb;
+    background-color:#b38ff9;
     color: white;
     font-weight: bold;
     border-radius: 25px;
@@ -19,6 +21,8 @@ body {
 }
 
 .btn-book:hover {
-    background-color: #5c2bc1; /* Slightly darker hover effect */
+    background-color:#b38ff9; /* Slightly darker hover effect */
     color: white;
 }
+/* Ensure navbar has consistent height */
+

@@ -9,18 +9,20 @@ class Chapter extends Model
 {
     use HasFactory;
 
-    // Define the fillable attributes
-    protected $fillable = ['chapter_number', 'book_id'];
+    protected $fillable = ['book_id', 'chapter_number'];
 
-    // Define relationship with verses
+    public function book()
+    {
+        return $this->belongsTo(Book::class);
+    }
+
     public function verses()
     {
         return $this->hasMany(Verse::class);
     }
 
-    // Define relationship with book
-    public function book()
+    public function questions()
     {
-        return $this->belongsTo(Book::class);
+        return $this->hasMany(Question::class);
     }
 }

@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\Question;
 use Illuminate\Http\Request;
+use App\Models\Verse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class BookController extends Controller
 {
@@ -12,26 +16,89 @@ class BookController extends Controller
      */
     public function index()
     {
-         // Fetch all books from the database
-         $books = Book::all();
+        // Fetch all books from the database
+        $books = Book::all();
 
-         // Pass the books to the view
-         return view('books.index', compact('books'));
+        // Pass the books to the view
+        return view('books.index', compact('books'));
     }
+
     public function showQuestions($id)
     {
         // Fetch the selected book by its ID
         $book = Book::findOrFail($id);
 
-        // Generate specific questions based on the book
-        $questions = $this->generateQuestions($book->name);
+        // Check if the current session is for a different book
+        $currentBookId = session('current_book_id');
+        if ($currentBookId != $id) {
+            // Reset questions and question index for a new book
+            session()->forget(['questions', 'current_question_index', 'score', 'correct_streak', 'wrong_streak', 'question_timer', 'rank']);
+            session(['current_book_id' => $id, 'score' => 0, 'correct_streak' => 0, 'wrong_streak' => 0, 'rank' => 'Beginner']);
+        }
 
-        // Store questions in the session
+        // Retrieve questions along with their related verses and books
+        $questions = session('questions', function() use ($book) {
+            // Eager load verses along with questions
+            $dbQuestions = Question::with(['verse', 'verse.chapter', 'verse.book'])
+                ->where('book_id', $book->id)
+                ->get()
+                ->toArray();
+
+            // Shuffle the options for each question
+            foreach ($dbQuestions as &$question) {
+                // Shuffle options
+                $question['options'] = $this->shuffleOptions(json_decode($question['options'], true));
+
+                // Generate the verse reference in the format "Book Chapter:Verse"
+                if ($question['verse']) {
+                    $verse = $question['verse'];
+                    $chapter = $verse['chapter']; // Get the related chapter
+                    $bookName = $verse['book']['name']; // Get the related book name
+                    $question['verse_reference'] = "{$bookName} {$chapter['chapter_number']}:{$verse['verse_number']}";
+                } else {
+                    $question['verse_reference'] = "N/A"; // Handle the case where verse is not found
+                }
+
+                // Store the verse reference in the session as well
+                session()->put("verse_reference.{$question['id']}", $question['verse_reference']);
+            }
+            return $dbQuestions;
+        });
+
         session(['questions' => $questions]);
 
-        // Return the view with the questions
-        return view('books.questions', compact('book', 'questions'));
+        // Get the current question index from the session, defaulting to 0
+        $currentQuestionIndex = session('current_question_index', 0);
+
+        // If the user has completed all the questions, redirect them to a completion page
+        if ($currentQuestionIndex >= count($questions)) {
+            return redirect()->route('quiz.completed', ['book' => $id]);
+        }
+
+        // Get the current question based on the index
+        $currentQuestion = $questions[$currentQuestionIndex];
+
+        // Store the corresponding verse reference of the current question in the session
+        $currentQuestion['verse_reference'] = session("verse_reference.{$currentQuestion['id']}");
+
+        // Start a timer for the current question (1 minute)
+        session(['question_timer' => now()->addMinutes(1)]);
+
+        // Pass the current question, book details, and the timer to the view
+        return view('books.questions', compact('book', 'currentQuestion'));
     }
+
+    public function quizCompleted($bookId)
+    {
+        // Fetch the book details (optional)
+        $book = Book::findOrFail($bookId);
+
+        // Clear the session data
+        session()->forget(['current_question_index', 'selected_answers', 'score', 'correct_streak', 'wrong_streak', 'question_timer', 'rank']);
+
+        return view('books.completed', compact('book'));
+    }
+
     public function storeAnswer(Request $request)
     {
         $request->validate([
@@ -39,319 +106,143 @@ class BookController extends Controller
             'answer' => 'required|string',
         ]);
 
-        // Store selected answers in session
-        $selectedAnswers = session('selected_answers', []);
-        $selectedAnswers[$request->question] = $request->answer;
-        session(['selected_answers' => $selectedAnswers]);
+        // Check if the timer has expired
+        $timerExpired = $this->hasTimerExpired();
+        $currentQuestionIndex = session('current_question_index', 0);
+        $questions = session('questions', []);
+        $currentQuestion = $questions[$currentQuestionIndex] ?? null;
 
-        return response()->json(['success' => true]);
-    }
+        // Initialize scoring variables
+        $score = session('score', 0);
+        $correctStreak = session('correct_streak', 0);
+        $wrongStreak = session('wrong_streak', 0);
+        $timeTaken = now()->diffInSeconds(session('question_timer')); // Time taken to answer
 
-    private function generateQuestions($bookName)
-    {
-        $questions = [];
+        if ($currentQuestion) {
+            // Check the answer
+            if ($request->answer === $currentQuestion['correct_answer']) {
+                // Correct answer
+                $score += 10; // +10 points for correct answer
 
-        switch ($bookName) {
-            case 'Genesis':
-                $questions = [
-                    [
-                        'text' => 'Who was the father of Abraham?',
-                        'options' => $this->shuffleOptions(['Terah', 'Nahor', 'Haran', 'Isaac']),
-                        'correct_answer' => 'Terah',
-                        'verse_reference' => 'Genesis 11:27'
-                    ],
-                    [
-                        'text' => 'What did God create on the seventh day?',
-                        'options' => $this->shuffleOptions(['Humans', 'Animals', 'Heaven and Earth', 'Rest']),
-                        'correct_answer' => 'Rest',
-                        'verse_reference' => 'Genesis 2:2-3'
-                    ],
-                    // Add more questions for Genesis...
-                ];
-                break;
+                // Speed bonus
+                if ($timeTaken <= 10) {
+                    $score += 5; // +5 points if answered within 10 seconds
+                }
 
-            case 'Ezra':
-                $questions = [
-                    [
-                        'text' => 'Who led the first group of exiles back to Jerusalem?',
-                        'options' => $this->shuffleOptions(['Ezra', 'Nehemiah', 'Zerubbabel', 'Joshua']),
-                        'correct_answer' => 'Zerubbabel',
-                        'verse_reference' => 'Ezra 1:11'
-                    ],
-                    [
-                        'text' => 'What was Ezra’s profession?',
-                        'options' => $this->shuffleOptions(['Priest', 'King', 'Prophet', 'Scribe']),
-                        'correct_answer' => 'Scribe',
-                        'verse_reference' => 'Ezra 7:6'
-                    ],
-                    // Add more questions for Ezra...
-                ];
-                break;
+                // Update correct streak
+                $correctStreak++;
+                if ($correctStreak % 3 === 0) {
+                    $score += 5; // +5 points for every 3 consecutive correct answers
+                }
+                $wrongStreak = 0; // Reset wrong streak
+            } else {
+                // Incorrect answer
+                $score -= 5; // -5 points for incorrect answer
+                $wrongStreak++;
 
-            case 'Numbers':
-                $questions = [
-                    [
-                        'text' => 'How many spies were sent to Canaan?',
-                        'options' => $this->shuffleOptions(['12', '10', '14', '8']),
-                        'correct_answer' => '12',
-                        'verse_reference' => 'Numbers 13:1-2'
-                    ],
-                    [
-                        'text' => 'Who was swallowed by a great fish?',
-                        'options' => $this->shuffleOptions(['Jonah', 'Moses', 'Noah', 'Balaam']),
-                        'correct_answer' => 'Jonah',
-                        'verse_reference' => 'Numbers 22:32'
-                    ],
-                    // Add more questions for Numbers...
-                ];
-                break;
+                // Wrong streak penalty
+                if ($wrongStreak === 3) {
+                    $score -= 10; // Lose an additional 10 points after 3 consecutive wrong answers
+                }
 
-            case 'Judges':
-                $questions = [
-                    [
-                        'text' => 'Who was the strongest judge of Israel?',
-                        'options' => $this->shuffleOptions(['Gideon', 'Samson', 'Ehud', 'Deborah']),
-                        'correct_answer' => 'Samson',
-                        'verse_reference' => 'Judges 16:30'
-                    ],
-                    [
-                        'text' => 'What did Gideon use to test God?',
-                        'options' => $this->shuffleOptions(['A fleece', 'A sword', 'A fire', 'A dream']),
-                        'correct_answer' => 'A fleece',
-                        'verse_reference' => 'Judges 6:36-40'
-                    ],
-                    // Add more questions for Judges...
-                ];
-                break;
+                $correctStreak = 0; // Reset correct streak
+            }
 
-            case 'Nehemiah':
-                $questions = [
-                    [
-                        'text' => 'What was Nehemiah’s role in rebuilding Jerusalem?',
-                        'options' => $this->shuffleOptions(['Governor', 'High Priest', 'King', 'Prophet']),
-                        'correct_answer' => 'Governor',
-                        'verse_reference' => 'Nehemiah 5:14'
-                    ],
-                    [
-                        'text' => 'How long did it take to rebuild the wall?',
-                        'options' => $this->shuffleOptions(['52 days', '70 days', '1 year', '3 months']),
-                        'correct_answer' => '52 days',
-                        'verse_reference' => 'Nehemiah 6:15'
-                    ],
-                    // Add more questions for Nehemiah...
-                ];
-                break;
-
-            case 'Romans':
-                $questions = [
-                    [
-                        'text' => 'What does Paul say is the wages of sin?',
-                        'options' => $this->shuffleOptions(['Death', 'Separation', 'Sorrow', 'Destruction']),
-                        'correct_answer' => 'Death',
-                        'verse_reference' => 'Romans 6:23'
-                    ],
-                    [
-                        'text' => 'What does Paul urge the Romans to be transformed by?',
-                        'options' => $this->shuffleOptions(['The Holy Spirit', 'The Law', 'The renewal of their mind', 'Their actions']),
-                        'correct_answer' => 'The renewal of their mind',
-                        'verse_reference' => 'Romans 12:2'
-                    ],
-                    // Add more questions for Romans...
-                ];
-                break;
-
-            case 'Galatians':
-                $questions = [
-                    [
-                        'text' => 'What is the fruit of the Spirit according to Paul?',
-                        'options' => $this->shuffleOptions(['Love, joy, peace', 'Faith, hope, love', 'Wisdom, knowledge, understanding', 'Power, authority, strength']),
-                        'correct_answer' => 'Love, joy, peace',
-                        'verse_reference' => 'Galatians 5:22-23'
-                    ],
-                    [
-                        'text' => 'What does Paul warn against in Galatians?',
-                        'options' => $this->shuffleOptions(['Legalism', 'Idolatry', 'Greed', 'Immorality']),
-                        'correct_answer' => 'Legalism',
-                        'verse_reference' => 'Galatians 1:6'
-                    ],
-                    // Add more questions for Galatians...
-                ];
-                break;
-
-            case 'Acts':
-                $questions = [
-                    [
-                        'text' => 'Who was the first Christian martyr?',
-                        'options' => $this->shuffleOptions(['Stephen', 'James', 'Peter', 'Paul']),
-                        'correct_answer' => 'Stephen',
-                        'verse_reference' => 'Acts 7:59-60'
-                    ],
-                    [
-                        'text' => 'What happened at Pentecost?',
-                        'options' => $this->shuffleOptions(['The Holy Spirit came upon the apostles', 'Jesus was crucified', 'The temple was rebuilt', 'The law was given']),
-                        'correct_answer' => 'The Holy Spirit came upon the apostles',
-                        'verse_reference' => 'Acts 2:1-4'
-                    ],
-                    // Add more questions for Acts...
-                ];
-                break;
-
-            case 'Job':
-                $questions = [
-                    [
-                        'text' => 'What did Job lose in a single day?',
-                        'options' => $this->shuffleOptions(['His wealth', 'His health', 'His family', 'His friends']),
-                        'correct_answer' => 'His family',
-                        'verse_reference' => 'Job 1:18-19'
-                    ],
-                    [
-                        'text' => 'Who were Job\'s three friends who came to comfort him?',
-                        'options' => $this->shuffleOptions(['Eliphaz, Bildad, Zophar', 'Elihu, Job, Bildad', 'Job, Noah, Abraham', 'Moses, Aaron, Job']),
-                        'correct_answer' => 'Eliphaz, Bildad, Zophar',
-                        'verse_reference' => 'Job 2:11'
-                    ],
-                    // Add more questions for Job...
-                ];
-                break;
-
-            case 'Leviticus':
-                $questions = [
-                    [
-                        'text' => 'What is the main focus of the book of Leviticus?',
-                        'options' => $this->shuffleOptions(['Laws and rituals', 'History of Israel', 'Poetry', 'Prophecy']),
-                        'correct_answer' => 'Laws and rituals',
-                        'verse_reference' => 'Leviticus 1:1'
-                    ],
-                    [
-                        'text' => 'What was the primary purpose of the Day of Atonement?',
-                        'options' => $this->shuffleOptions(['To celebrate harvest', 'To confess sins', 'To remember the Exodus', 'To offer thanksgiving']),
-                        'correct_answer' => 'To confess sins',
-                        'verse_reference' => 'Leviticus 16:30'
-                    ],
-                    // Add more questions for Leviticus...
-                ];
-                break;
-
-            case 'Isaiah':
-                $questions = [
-                    [
-                        'text' => 'Who is the prophet that foretold the coming of the Messiah?',
-                        'options' => $this->shuffleOptions(['Jeremiah', 'Ezekiel', 'Isaiah', 'Daniel']),
-                        'correct_answer' => 'Isaiah',
-                        'verse_reference' => 'Isaiah 7:14'
-                    ],
-                    [
-                        'text' => 'What is the "Suffering Servant" a reference to in Isaiah?',
-                        'options' => $this->shuffleOptions(['A king', 'A prophet', 'The Messiah', 'A priest']),
-                        'correct_answer' => 'The Messiah',
-                        'verse_reference' => 'Isaiah 53'
-                    ],
-                    // Add more questions for Isaiah...
-                ];
-                break;
-
-            case 'Joshua':
-                $questions = [
-                    [
-                        'text' => 'Who succeeded Moses as the leader of Israel?',
-                        'options' => $this->shuffleOptions(['Aaron', 'Joshua', 'Caleb', 'Gideon']),
-                        'correct_answer' => 'Joshua',
-                        'verse_reference' => 'Joshua 1:1-2'
-                    ],
-                    [
-                        'text' => 'What city’s walls fell after the Israelites marched around it for seven days?',
-                        'options' => $this->shuffleOptions(['Jericho', 'Ai', 'Hebron', 'Jerusalem']),
-                        'correct_answer' => 'Jericho',
-                        'verse_reference' => 'Joshua 6:20'
-                    ],
-                    // Add more questions for Joshua...
-                ];
-                break;
-
-            case 'Ephesians':
-                $questions = [
-                    [
-                        'text' => 'What does Paul describe as the "armor of God"?',
-                        'options' => $this->shuffleOptions(['Spiritual tools', 'Physical weapons', 'Knowledge', 'Wealth']),
-                        'correct_answer' => 'Spiritual tools',
-                        'verse_reference' => 'Ephesians 6:11'
-                    ],
-                    [
-                        'text' => 'What is the primary theme of Ephesians?',
-                        'options' => $this->shuffleOptions(['Faith', 'Grace', 'Unity in Christ', 'Law']),
-                        'correct_answer' => 'Unity in Christ',
-                        'verse_reference' => 'Ephesians 4:4-6'
-                    ],
-                    // Add more questions for Ephesians...
-                ];
-                break;
-
-            case 'Deuteronomy':
-                $questions = [
-                    [
-                        'text' => 'What is the meaning of the name "Deuteronomy"?',
-                        'options' => $this->shuffleOptions(['Second law', 'First law', 'New covenant', 'Old covenant']),
-                        'correct_answer' => 'Second law',
-                        'verse_reference' => 'Deuteronomy 17:18'
-                    ],
-                    [
-                        'text' => 'What did Moses remind the Israelites to do before entering the Promised Land?',
-                        'options' => $this->shuffleOptions(['To forget the past', 'To obey God\'s commandments', 'To build temples', 'To offer sacrifices']),
-                        'correct_answer' => 'To obey God\'s commandments',
-                        'verse_reference' => 'Deuteronomy 6:1-2'
-                    ],
-                    // Add more questions for Deuteronomy...
-                ];
-                break;
-            case 'Esther':
-                $questions = [
-                    [
-                        'text' => 'Who was the queen of Persia that saved the Jewish people?',
-                        'options' => $this->shuffleOptions(['Esther', 'Vashti', 'Deborah', 'Rachel']),
-                        'correct_answer' => 'Esther',
-                        'verse_reference' => 'Esther 4:14'
-                    ],
-                    [
-                        'text' => 'What was the name of Esther’s cousin who raised her?',
-                        'options' => $this->shuffleOptions(['Mordecai', 'Haman', 'Nehemiah', 'Ezra']),
-                        'correct_answer' => 'Mordecai',
-                        'verse_reference' => 'Esther 2:7'
-                    ],
-                    [
-                        'text' => 'Who plotted to destroy the Jews during Esther’s time?',
-                        'options' => $this->shuffleOptions(['Haman', 'Saul', 'David', 'Ahasuerus']),
-                        'correct_answer' => 'Haman',
-                        'verse_reference' => 'Esther 3:5-6'
-                    ],
-                    [
-                        'text' => 'What did Esther risk by approaching the king without being summoned?',
-                        'options' => $this->shuffleOptions(['Death', 'Imprisonment', 'Exile', 'Poverty']),
-                        'correct_answer' => 'Death',
-                        'verse_reference' => 'Esther 4:11'
-                    ],
-                    [
-                        'text' => 'What feast was established to celebrate the deliverance of the Jews?',
-                        'options' => $this->shuffleOptions(['Purim', 'Passover', 'Pentecost', 'Tabernacles']),
-                        'correct_answer' => 'Purim',
-                        'verse_reference' => 'Esther 9:26-28'
-                    ],
-                    // Add more questions for Esther...
-                ];
-                break;
-                
-
-            default:
-                // Handle case where book is not found or has no questions
-                break;
+            // Time penalties
+            if ($timeTaken > 20) {
+                $score -= 2 * ($timeTaken - 20); // Lose 2 points for every second over 20 seconds
+            }
         }
 
-        return array_slice($questions, 0, 10);  // Example: return 10 random questions
+        // Determine the new rank based on the updated score
+        $rank = $this->determineRank($score);
+
+        // Store updated score, rank, and streaks in session
+        session(['score' => $score, 'correct_streak' => $correctStreak, 'wrong_streak' => $wrongStreak, 'rank' => $rank]);
+
+        // Increment the current question index
+        session(['current_question_index' => $currentQuestionIndex + 1]);
+        session()->forget('question_timer'); // Reset the timer
+
+        return response()->json(['success' => true, 'score' => $score, 'rank' => $rank]); // Return the updated score and rank
     }
 
+    /**
+     * Check if the question timer has expired.
+     */
+    public function hasTimerExpired()
+    {
+        $timer = session('question_timer');
+        return $timer ? now()->greaterThanOrEqualTo($timer) : false;
+    }
+
+    /**
+     * Shuffle the options for a question.
+     */
     private function shuffleOptions($options)
     {
         shuffle($options);  // Randomize the order of the options
         return $options;
+    }
+
+    /**
+     * Determine the rank based on the current score.
+     */
+    private function determineRank($score)
+    {
+        if ($score >= 1001) {
+            return 'Master';
+        } elseif ($score >= 501) {
+            return 'Scholar';
+        } elseif ($score >= 101) {
+            return 'Disciple';
+        } else {
+            return 'Beginner';
+        }
+    }
+
+    /**
+     * Fetch the verse text based on the provided verse reference.
+     */
+    public function getVerse(Request $request)
+    {
+        // Log the incoming request data
+        Log::info('Received request for verse:', $request->all());
+
+        // Validate the incoming request
+        try {
+            $validatedData = $request->validate([
+                'book_id' => 'required|integer',
+                'chapter_id' => 'required|integer',
+                'verse' => 'required|integer',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error:', ['errors' => $e->errors()]);
+            return response()->json(['success' => false, 'message' => 'Validation error.']);
+        }
+
+        // Log the validated data
+        Log::info('Validated data:', $validatedData);
+
+        // Fetch the verse text from the database
+        try {
+            $verseText = DB::table('verses')
+                ->where('book_id', $validatedData['book_id'])
+                ->where('chapter_id', $validatedData['chapter_id'])
+                ->where('verse_number', $validatedData['verse'])
+                ->value('text'); // Adjust 'text' to the actual column name
+
+            if ($verseText) {
+                Log::info('Verse found:', ['verse_text' => $verseText]);
+                return response()->json(['success' => true, 'verse_text' => $verseText]);
+            } else {
+                Log::warning('Verse not found for:', $validatedData);
+                return response()->json(['success' => false, 'message' => 'Verse not found.']);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error fetching verse:', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error fetching verse.']);
+        }
     }
 
     /**

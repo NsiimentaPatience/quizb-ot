@@ -1,18 +1,16 @@
-/* Banner Styles */
-.banner {
+/* Background Image Styles */
+body {
     background-image: url('/images/scroll.jpg'); /* Adjust the path to your image */
     background-size: cover;
     background-position: center;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+    height: 100vh; /* Ensure body covers full viewport height */
+    
 }
 
+/* Carousel Item Styles */
 .carousel-item {
     position: relative;
-    height: 100vh; /* Make sure it takes up full viewport height */
+    height: 100vh; /* Ensure full viewport height */
 }
 
 /* Adjust carousel-caption to be centered vertically within the carousel-item */
@@ -22,11 +20,11 @@
     left: 50%;
     transform: translate(-50%, 50%);
     color: white;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background for readability */
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background for readability */
     padding: 20px; /* Increase padding for more space */
     border-radius: 5px;
     text-align: center;
-    z-index: 10; /* Make sure it's above other elements */
+    z-index: 10; /* Ensure it's above other elements */
     width: 80%; /* Adjust width as needed */
     box-sizing: border-box;
 }
@@ -36,6 +34,13 @@
 .carousel-control-next {
     z-index: 15; /* Ensure they are above the caption */
     width: 5%; /* Adjust the size if needed */
+    opacity: 0.7; /* Slightly transparent controls for better aesthetics */
+    transition: opacity 0.3s; /* Transition effect on hover */
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    opacity: 1; /* Fully opaque on hover */
 }
 
 .carousel-control-prev {
@@ -49,9 +54,11 @@
 /* Transparent Column Styles */
 .text-center,
 .d-flex {
-    background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    
     padding: 2rem;
     border-radius: 16px; /* Rounded corners */
+    margin-top: 2rem; /* Increase margin to avoid disappearing at the top */
+    min-height: 200px; /* Set a minimum height */
 }
 
 /* Card Styles */
@@ -60,7 +67,7 @@
 }
 
 .card {
-    background-color: #6e34eb; /* Deep Blue */
+    background-color:#b38ff9; /* Deep Blue */
     border-radius: 16px; /* Rounded corners */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     border: none;
@@ -79,18 +86,9 @@
 }
 
 /* Tabs */
-.nav-tabs .nav-link {
-    color: #FFD700; /* Gold */
-}
-
-/* Active Tab */
-.nav-tabs .nav-link.active {
-    background-color: #6e34eb; /* Deep Blue */
-}
 
 /* Form Controls */
 form {
-    background: rgba(255, 255, 255, 0.1); /* Transparent background */
     padding: 1rem;
     border-radius: 16px; /* Rounded corners for the form */
 }
@@ -107,19 +105,32 @@ form {
 .btn {
     color: #FFD700; /* Gold */
 }
-.footer-custom {
-    background-color: rgba(0, 0, 0, 0.8) !important; /* Adjust the alpha value for transparency */
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    body {
+        padding-top: 80px; /* Adjust based on your design */
+    }
+}
+/* Remove shadow from all Bootstrap elements */
+.shadow-none,
+.card,
+.container,
+.row,
+.col-lg-6 {
+    box-shadow: none !important;
 }
 
-footer h5 {
-    font-weight: bold;
+/* You can also target specific elements */
+.card {
+    box-shadow: none !important;
 }
 
-footer p, footer a {
-    color: white !important;
+.container {
+    box-shadow: none !important;
 }
 
-footer a:hover {
-    color: #ddd;
-    text-decoration: none;
+.col-lg-6 {
+    box-shadow: none !important;
 }
+/* Ensure navbar has consistent height */

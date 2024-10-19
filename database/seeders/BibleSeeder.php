@@ -5,78 +5,52 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
 use App\Models\Book;
+use App\Models\Category;
 use App\Models\Chapter;
 use App\Models\Verse;
-use App\Models\Category; // Ensure you have a Category model
 
 class BibleSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function run()
     {
-        // Path to the JSON file
-        $filePath = storage_path('app/bible/bible.json');
+        // Load the JSON file from the storage path
+        $jsonPath = storage_path('app/bible/bible.json');
+        $json = File::get($jsonPath);
+        $data = json_decode($json, true);
 
-        // Check if the file exists
-        if (!File::exists($filePath)) {
-            $this->command->error("The Bible data file does not exist at: {$filePath}");
-            return;
-        }
-
-        // Load and decode the JSON file
-        $bibleData = json_decode(File::get($filePath), true);
-
-        // Check for valid JSON data
-        if (!$bibleData) {
-            $this->command->error("Invalid JSON data in the file: {$filePath}");
-            return;
-        }
-
-        // Seed the Bible data
-        $this->seedBibleData($bibleData);
-    }
-
-    /**
-     * Function to seed Bible data
-     *
-     * @param array $bibleData
-     * @return void
-     */
-    private function seedBibleData(array $bibleData): void
-    {
-        foreach ($bibleData as $bookName => $bookData) {
-            $categoryName = $bookData['category'];
-            unset($bookData['category']); // Remove category from bookData
-
+        foreach ($data as $bookName => $bookData) {
             // Find or create the category
-            $category = Category::firstOrCreate(['name' => $categoryName]);
+            $category = Category::firstOrCreate(['name' => $bookData['category']]);
 
-            // Find or create the book with category
+            // Find or create the book with the category_id
             $book = Book::firstOrCreate([
                 'name' => $bookName,
-                'category_id' => $category->id // Associate category with the book
+                'category_id' => $category->id,
             ]);
 
-            foreach ($bookData as $chapterName => $verses) {
-                // Extract chapter number from the chapter name (e.g., "Ephesians 1" -> 1)
-                $chapterNumber = intval($chapterName);
+            // Loop through each chapter in the book
+            foreach ($bookData as $chapterKey => $chapterData) {
+                if (strpos($chapterKey, $bookName) !== false) {
+                    // Extract chapter number from the key (e.g., "Ephesians 1" -> 1)
+                    $chapterNumber = explode(' ', $chapterKey)[1];
 
-                // Find or create the chapter
-                $chapter = Chapter::firstOrCreate([
-                    'book_id' => $book->id,
-                    'chapter_number' => $chapterNumber
-                ]);
-
-                foreach ($verses as $verseNumber => $verseText) {
-                    // Find or create each verse
-                    Verse::firstOrCreate([
-                        'chapter_id' => $chapter->id,
-                        'verse_number' => $verseNumber
-                    ], [
-                        'text' => $verseText
+                    // Find or create the chapter associated with the book
+                    $chapter = Chapter::firstOrCreate([
+                        'book_id' => $book->id,
+                        'chapter_number' => (int)$chapterNumber,
                     ]);
+
+                    // Loop through each verse in the chapter
+                    foreach ($chapterData as $verseNumber => $verseText) {
+                        // Use firstOrCreate to avoid duplicates for verses
+                        Verse::firstOrCreate([
+                            'chapter_id' => $chapter->id,
+                            'book_id' => $book->id, // Include the book_id here
+                            'verse_number' => (int)$verseNumber,
+                        ], [
+                            'text' => $verseText, // The text will only be set if the verse doesn't already exist
+                        ]);
+                    }
                 }
             }
         }

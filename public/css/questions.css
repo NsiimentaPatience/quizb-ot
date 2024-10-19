@@ -1,5 +1,5 @@
 body {
-    background-image: url('/images/bible.jpg'); /* Replace with your image path */
+    background-color:#e7e5ec; /* Replace with your image path */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -10,11 +10,11 @@ body {
 }
 
 .question-card {
-    background-color: #6e34eb;
+    background-color: white;
     max-width: 500px;
     width: 100%;
     border-radius: 15px;
-    color: white;
+    color:black;
     font-weight: bold;
     text-align: center;
 }
@@ -25,8 +25,8 @@ body {
 }
 
 .btn-option {
-    background-color: white;
-    color: #6e34eb;
+    background-color:#b38ff9;
+    color: white;
     font-weight: bold;
     max-width: 300px;
     width: 100%;
@@ -38,7 +38,7 @@ body {
 
 .btn-option:hover {
     background-color: #f5f5f5;
-    color: #6e34eb;
+    color: #b38ff9;
 }
 
 h2 {

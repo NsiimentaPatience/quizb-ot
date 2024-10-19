@@ -11,13 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('verses', function (Blueprint $table) {
+        Schema::create('questions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('verse_id')->constrained()->onDelete('cascade'); // Foreign key to verses table
             $table->foreignId('chapter_id')->constrained()->onDelete('cascade'); // Foreign key to chapters table
             $table->foreignId('book_id')->constrained()->onDelete('cascade'); // Foreign key to books table
-            $table->integer('verse_number');
-            $table->text('text'); // You can change the type if needed
+            $table->string('question');
+            $table->string('correct_answer');
+            $table->json('options'); // Store multiple options as JSON
             $table->timestamps();
+
         });
     }
 
@@ -26,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('verses');
+        Schema::dropIfExists('questions');
     }
 };

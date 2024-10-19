@@ -14,11 +14,9 @@ return new class extends Migration
         Schema::create('books', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->unsignedBigInteger('category_id'); // Ensure this is unsigned and matches the 'id' in categories table.
+            $table->foreignId('category_id')->constrained()->onDelete('cascade'); // Foreign key to categories table
             $table->timestamps();
-        
-            // Add the foreign key constraint
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+
         });
     }
 
