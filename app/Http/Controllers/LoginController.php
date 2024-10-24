@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User; 
-use App\Models\Admin; // Import the Admin model
 use App\Models\Login;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 
 class LoginController extends Controller
 {
@@ -31,36 +30,27 @@ class LoginController extends Controller
 
         // Attempt to log the user in using either email or username
         if (Auth::attempt([$fieldType => $request->login, 'password' => $request->password])) {
+            // Check user role to redirect appropriately
+            if (Auth::user()->role === 'admin') {
+                // Redirect admins to the admin dashboard immediately
+                return redirect()->intended('/admin/dashboard')->with('success', 'Admin logged in successfully.');
+            }
+
             // Check if the user has accepted the user agreement
             if (!Auth::user()->user_agreement_accepted) {
                 return redirect()->route('user-agreement'); // Redirect to user agreement if not accepted
             }
 
+            // Redirect normal users to the books page
             return redirect()->intended('books')->with('success', 'Successfully logged in.');
         }
 
+        // If login fails
         return back()->withErrors([
             'login' => 'The provided credentials do not match our records.',
         ]);
     }
 
-    // Handle admin login process
-    public function adminLogin(Request $request)
-    {
-        $request->validate([
-            'admin_username' => 'required',
-            'admin_password' => 'required',
-        ]);
-
-        // Attempt to log in the admin using the 'name' and 'password' columns
-        if (Auth::guard('admin')->attempt(['name' => $request->admin_username, 'password' => $request->admin_password])) {
-            return redirect()->intended('/admin/dashboard')->with('success', 'Admin logged in successfully.');
-        }
-
-        return back()->withErrors([
-            'admin_username' => 'Admin credentials do not match our records.',
-        ]);
-    }
 
     // Handle the signup process (registration)
     public function signup(Request $request)
@@ -72,13 +62,14 @@ class LoginController extends Controller
             'country' => 'required|string|max:255',
         ]);
 
-        // Create a new user
+        // Create a new user with the default role of 'user'
         $user = User::create([
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'country' => $request->country,
             'user_agreement_accepted' => false,
+            'role' => 'user', // Default role for normal users
         ]);
 
         Auth::login($user);
@@ -91,5 +82,64 @@ class LoginController extends Controller
     {
         Auth::logout();
         return redirect('login')->with('success', 'Successfully logged out.');
+    }
+
+    // Handle user agreement acceptance
+    public function acceptAgreement(Request $request)
+    {
+        // Validate the incoming request to ensure the checkbox is checked
+        $request->validate([
+            'acceptAgreement' => 'required|accepted',
+        ]);
+
+        // Retrieve the authenticated user
+        $user = Auth::user();
+
+        if ($user) {
+            // Update the user agreement status directly
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update(['user_agreement_accepted' => true]);
+        }
+
+        // Return a response to indicate success
+        return response()->json(['success' => true]);
+    }
+
+    // Placeholder methods for other CRUD operations (if needed)
+    
+    public function index()
+    {
+        // Placeholder for index functionality
+    }
+
+    public function create()
+    {
+        // Placeholder for create functionality
+    }
+
+    public function store(Request $request)
+    {
+        // Placeholder for store functionality
+    }
+
+    public function show(Login $login)
+    {
+        // Placeholder for show functionality
+    }
+
+    public function edit(Login $login)
+    {
+        // Placeholder for edit functionality
+    }
+
+    public function update(Request $request, Login $login)
+    {
+        // Placeholder for update functionality
+    }
+
+    public function destroy(Login $login)
+    {
+        // Placeholder for destroy functionality
     }
 }

@@ -19,8 +19,9 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
-        'country', // Add country to mass assignable attributes
-        'user_agreement_accepted',
+        'country', // Make country mass assignable
+        'role', // Add role to mass assignable attributes
+        'user_agreement_accepted', // Assuming this is for terms or agreements
     ];
 
     /**
@@ -34,15 +35,12 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 }

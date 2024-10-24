@@ -88,121 +88,96 @@
             </div>
 
 
-                <!-- Card Column -->
-                <div class="col-lg-6 col-md-12 d-flex justify-content-center align-items-center">
-                    <div class="card-container">
-                        <div class="card mx-auto">
-                            <div class="card-body text-center">
-                                <img src="/images/logo.png" alt="Logo" class="card-logo mb-3">
+                            <!-- Card Column -->
+            <div class="col-lg-6 col-md-12 d-flex justify-content-center align-items-center">
+                <div class="card-container">
+                    <div class="card mx-auto">
+                        <div class="card-body text-center">
+                            <img src="/images/logo.png" alt="Logo" class="card-logo mb-3">
 
-                                <!-- Flash Messages -->
-                                @if (session('success'))
-                                    <div class="alert alert-success" role="alert">
-                                        {{ session('success') }}
-                                    </div>
-                                @endif
-                                @if (session('error'))
-                                    <div class="alert alert-danger" role="alert">
-                                        {{ session('error') }}
-                                    </div>
-                                @endif
+                            <!-- Flash Messages -->
+                            @if (session('success'))
+                                <div class="alert alert-success" role="alert">
+                                    {{ session('success') }}
+                                </div>
+                            @endif
+                            @if (session('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    {{ session('error') }}
+                                </div>
+                            @endif
 
-                                <ul class="nav nav-tabs" id="myTab" role="tablist">
-                                    <li class="nav-item" role="presentation">
-                                        <a class="nav-link active" id="login-tab" data-bs-toggle="tab" href="#login" role="tab" aria-controls="login" aria-selected="true">User Login</a>
-                                    </li>
-                                    <li class="nav-item" role="presentation">
-                                        <a class="nav-link" id="admin-login-tab" data-bs-toggle="tab" href="#admin-login" role="tab" aria-controls="admin-login" aria-selected="false">Admin Login</a>
-                                    </li>
-                                    <li class="nav-item" role="presentation">
-                                        <a class="nav-link" id="signup-tab" data-bs-toggle="tab" href="#signup" role="tab" aria-controls="signup" aria-selected="false">Sign Up</a>
-                                    </li>
-                                </ul>
-                                <div class="tab-content" id="myTabContent">
-                                    <!-- User Login Form -->
-                                    <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
-                                        <form action="{{ route('login') }}" method="POST">
-                                            @csrf
-                                            <div class="mb-3">
-                                                <label for="username" class="form-label">Username or Email</label>
-                                                <input type="text" class="form-control" id="username" name="login" value="{{ old('login') }}" required>
-                                                @error('login')
-                                                    <span style="color: white">{{ $message }}</span>
-                                                @enderror
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="password" class="form-label">Password</label>
-                                                <input type="password" class="form-control" id="password" name="password" required>
-                                                @error('password')
-                                                    <span style="color: white">{{ $message }}</span>
-                                                @enderror
-                                            </div>
+                            <!-- Tab Navigation for Login and Sign Up -->
+                            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link active" id="login-tab" data-bs-toggle="tab" href="#login" role="tab" aria-controls="login" aria-selected="true">Login</a>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link" id="signup-tab" data-bs-toggle="tab" href="#signup" role="tab" aria-controls="signup" aria-selected="false">Sign Up</a>
+                                </li>
+                            </ul>
 
-                                            <button type="submit" class="btn btn-dark", style="color: #b38ff9">Login as User</button>
-                                        </form>
-                                    </div>
-                                    
-                                    <!-- Admin Login Form -->
-                                    <div class="tab-pane fade" id="admin-login" role="tabpanel" aria-labelledby="admin-login-tab">
-                                        <form action="{{ route('admin.login') }}" method="POST">
-                                            @csrf
-                                            <div class="mb-3">
-                                                <label for="adminUsername" class="form-label">Admin Username</label>
-                                                <input type="text" class="form-control" id="adminUsername" name="admin_username" required>
-                                                @error('admin_username')
-                                                    <span style="color: white">{{ $message }}</span>
-                                                @enderror
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="adminPassword" class="form-label">Admin Password</label>
-                                                <input type="password" class="form-control" id="adminPassword" name="admin_password" required>
-                                                @error('admin_password')
-                                                    <span style="color: white">{{ $message }}</span>
-                                                @enderror
-                                            </div>
+                            <div class="tab-content" id="myTabContent">
+                                <!-- Single Login Form for Both User and Admin -->
+                                <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+                                    <form action="{{ route('login') }}" method="POST">
+                                        @csrf
+                                        <div class="mb-3">
+                                            <label for="login" class="form-label">Username or Email</label>
+                                            <input type="text" class="form-control" id="login" name="login" value="{{ old('login') }}" required>
+                                            @error('login')
+                                                <span style="color: white">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="password" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="password" name="password" required>
+                                            @error('password')
+                                                <span style="color: white">{{ $message }}</span>
+                                            @enderror
+                                        </div>
 
-                                            <button type="submit" class="btn btn-dark" style="color: #b38ff9">Login as Admin</button>
-                                        </form>
-                                    </div>
-                                    
-                                    <!-- Signup Form -->
-                                    <div class="tab-pane fade" id="signup" role="tabpanel" aria-labelledby="signup-tab">
-                                        <form method="POST" action="{{ route('signup.submit') }}">
-                                            @csrf
-                                            <div class="mb-3">
-                                                <label for="signupUsername" class="form-label">Username</label>
-                                                <input type="text" class="form-control" id="signupUsername" name="username" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="signupEmail" class="form-label">Email address</label>
-                                                <input type="email" class="form-control" id="signupEmail" name="email" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="signupPassword" class="form-label">Password</label>
-                                                <input type="password" class="form-control" id="signupPassword" name="password" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="signupPasswordConfirmation" class="form-label">Confirm Password</label>
-                                                <input type="password" class="form-control" id="signupPasswordConfirmation" name="password_confirmation" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="signupCountry" class="form-label">Country</label>
-                                                <select class="form-select" id="signupCountry" name="country" required>
-                                                    <option value="" disabled selected>Select your country</option>
-                                                    <!-- Country options will be populated here -->
-                                                </select>
-                                            </div>
-                                            <button type="submit" class="btn btn-dark">Sign Up</button>
-                                        </form>
-                                    </div>
-                        
+                                        <button type="submit" class="btn btn-dark" style="color: #b38ff9">Login</button>
+                                    </form>
+                                </div>
+
+                                <!-- Signup Form -->
+                                <div class="tab-pane fade" id="signup" role="tabpanel" aria-labelledby="signup-tab">
+                                    <form method="POST" action="{{ route('signup.submit') }}">
+                                        @csrf
+                                        <div class="mb-3">
+                                            <label for="signupUsername" class="form-label">Username</label>
+                                            <input type="text" class="form-control" id="signupUsername" name="username" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="signupEmail" class="form-label">Email address</label>
+                                            <input type="email" class="form-control" id="signupEmail" name="email" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="signupPassword" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="signupPassword" name="password" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="signupPasswordConfirmation" class="form-label">Confirm Password</label>
+                                            <input type="password" class="form-control" id="signupPasswordConfirmation" name="password_confirmation" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="signupCountry" class="form-label">Country</label>
+                                            <select class="form-select" id="signupCountry" name="country" required>
+                                                <option value="" disabled selected>Select your country</option>
+                                                <!-- Country options will be populated here -->
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-dark">Sign Up</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+
             </div>
         </div>
     </div>

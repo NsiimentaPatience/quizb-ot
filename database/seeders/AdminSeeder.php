@@ -3,19 +3,24 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Admin;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
 {
-    public function run(): void
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
     {
-        if (!Admin::where('email', env('ADMIN_EMAIL'))->exists()) {
-            Admin::create([
-                'name' => env('ADMIN_NAME', 'Admin'),
-                'email' => env('ADMIN_EMAIL'),
-                'password' => Hash::make(env('ADMIN_PASSWORD')),
-            ]);
-        }
+        DB::table('users')->insert([
+            'username' => env('ADMIN_USERNAME', 'QuizbotAdmin'), // Use username instead of name
+            'email' => env('ADMIN_EMAIL', 'quizbotappafrica@gmail.com'), // Default admin email
+            'password' => Hash::make(env('ADMIN_PASSWORD', 'your_secure_password')), // Hash the password
+            'country' => null, // Admins do not have a country
+            'role' => 'admin', // Set the role to 'admin'
+        ]);
     }
 }
