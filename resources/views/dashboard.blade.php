@@ -13,7 +13,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="#">
+                        <a class="nav-link text-white" href="{{ route('admin.users.index') }}">
                             User Management
                         </a>
                     </li>
@@ -52,10 +52,10 @@
                     <div class="card bg-primary text-white mb-4">
                         <div class="card-body">
                             Total Users
-                            <h4>150</h4>
+                            <h4>{{ $totalUsers }}</h4>
                         </div>
                         <div class="card-footer d-flex align-items-center justify-content-between">
-                            <a class="text-white stretched-link" href="#">View Details</a>
+                            <a class="text-white stretched-link" href="{{ route('admin.users.index') }}">View Details</a>
                             <div class="text-white">
                                 <i class="fas fa-angle-right"></i>
                             </div>
@@ -66,7 +66,7 @@
                     <div class="card bg-success text-white mb-4">
                         <div class="card-body">
                             Active Sessions
-                            <h4>30</h4>
+                            <h4>{{ $activeSessions }}</h4>
                         </div>
                         <div class="card-footer d-flex align-items-center justify-content-between">
                             <a class="text-white stretched-link" href="#">View Details</a>
@@ -76,6 +76,7 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="col-lg-4">
                     <div class="card bg-warning text-white mb-4">
                         <div class="card-body">
@@ -87,6 +88,53 @@
                             <div class="text-white">
                                 <i class="fas fa-angle-right"></i>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management Section -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            User Management
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($users as $user)
+                                    <tr>
+                                        <td>{{ $user->id }}</td>
+                                        <td>{{ $user->username }}</td>
+                                        <td>{{ $user->email }}</td>
+                                        <td>
+                                            <span class="badge {{ $user->isActive ? 'bg-success' : 'bg-danger' }}">
+                                                {{ $user->isActive ? 'Active' : 'Inactive' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning edit-user" data-id="{{ $user->id }}" data-toggle="modal" data-target="#editUserModal">Edit</button>
+                                            <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirmDelete()">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                                
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -132,4 +180,65 @@
         </main>
     </div>
 </div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editUserForm" action="" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="userName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="userName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="userEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userStatus" class="form-label">Status</label>
+                        <select class="form-select" id="userStatus" name="active">
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script>
+    $(document).on('click', '.edit-user', function() {
+        var userId = $(this).data('id');
+        var url = '/admin/users/' + userId; // Adjust based on your routes
+        var row = $(this).closest('tr');
+
+        // Populate the modal fields
+        $('#userName').val(row.find('td:eq(1)').text());
+        $('#userEmail').val(row.find('td:eq(2)').text());
+        $('#userStatus').val(row.find('td:eq(3)').text() === 'Active' ? 1 : 0);
+        
+        // Update the form action URL
+        $('#editUserForm').attr('action', url);
+    });
+
+    // Confirmation for user deletion
+    function confirmDelete() {
+        return confirm("Are you sure you want to delete this user?");
+    }
+</script>
+@endpush

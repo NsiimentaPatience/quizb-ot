@@ -39,6 +39,37 @@
             color: #ddd;
             text-decoration: none;
         }
+        .modal-content {
+            border-radius: 12px; /* Rounded corners for the modal */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+
+        .modal-header {
+            border-bottom: none; /* Remove border */
+        }
+
+        .modal-body {
+            padding: 2rem; /* Padding for the modal body */
+        }
+
+        .btn-primary {
+            background-color: #007bff; /* Bootstrap primary color */
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+
+        .btn-danger {
+            background-color: #dc3545; /* Bootstrap danger color */
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333; /* Darker red on hover */
+        }
+
     </style>
 </head>
 <body>
@@ -62,19 +93,75 @@
                 <a class="nav-link mx-3" href="{{ url('/user/multiple') }}" style="box-shadow: none; padding: 0;">
                     <i class="fas fa-users" style="color: white; font-size: 24px;"></i>
                 </a>
+                <!-- New Review Button -->
+                <a class="btn btn-warning mx-3" href="{{ route('reviews.index') }}" style="color: #000; font-weight: bold;">Reviews
+                </a>
             </div>
-            <!-- Smaller Logout Button without Shadow or Extra Space -->
-            <div class="d-flex align-items-center" style="padding: 0; margin: 0;">
-                <form method="POST" action="{{ route('logout') }}" style="margin: 0; padding: 0;">
+            
+
+            <!-- Profile Avatar -->
+<div class="d-flex align-items-center">
+    <img 
+        src="{{ auth()->user()->profile_picture ? asset('storage/' . auth()->user()->profile_picture) : asset('default-avatar.png') }}" 
+        alt="Profile Avatar" 
+        class="img-fluid rounded-circle" 
+        style="width: 40px; height: 40px; cursor: pointer;" 
+        data-bs-toggle="modal" 
+        data-bs-target="#profileModal"
+    />
+</div>
+
+<!-- Profile Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="profileModalLabel">Hello {{ auth()->user()->username }}!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <form id="profileForm" action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
-                    <button type="submit" class="btn btn-outline-light btn-sm" 
-                            style="font-weight: bold; padding: 5px 10px; box-shadow: none; margin: 0;">
-                        Logout
-                    </button>
+                    <div class="position-relative d-inline-block">
+                        <img 
+                            src="{{ auth()->user()->profile_picture ? asset('storage/' . auth()->user()->profile_picture) : asset('default-avatar.png') }}" 
+                            alt="Profile Picture" 
+                            class="img-fluid rounded-circle mb-3" 
+                            style="width: 120px; height: 120px;"
+                        />
+                        <!-- Camera Emoji Overlay -->
+                        <label for="profilePictureInput" class="position-absolute bottom-0 end-0 bg-dark text-white rounded-circle p-1" style="cursor: pointer; font-size: 1.5rem;">
+                            📷
+                        </label>
+                        <!-- Hidden File Input -->
+                        <input 
+                            type="file" 
+                            name="profile_picture" 
+                            id="profilePictureInput" 
+                            accept="image/*" 
+                            class="d-none" 
+                            onchange="document.getElementById('profileForm').submit();"
+                        />
+                    </div>
+
+                    <h6 class="mb-1">{{ auth()->user()->username }}</h6>
+                    <p class="text-muted">{{ auth()->user()->email }}</p>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-dark">Logout</button>
                 </form>
             </div>
         </div>
+    </div>
+</div>
+
+                
+            
     </nav>
+    
     
     <div class="container mt-4">
         @yield('content')
@@ -84,8 +171,9 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4">
-                    <h5>About Us</h5>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do e.</p>
+                    <div class="d-flex align-items-center">
+                        <img src="{{ asset('images/logo.png') }}" alt="QuizBot Logo" class="me-2" style="width: 80px; height: 80px; object-fit: contain; border-radius: 50%;">
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <h5>Quick Links</h5>
@@ -100,7 +188,7 @@
                     <h5>Contact Us</h5>
                     <p>Email: quizbotappafrica@gmail.com</p>
                     <p>Phone: +256786259893</p>
-                    <p>Address: Kampala, Uganda</p>
+                    <p>Address: Kampala, Uganda</p>
                 </div>
             </div>
             <div class="row mt-3">
@@ -110,5 +198,6 @@
             </div>
         </div>
     </footer>
+    
 </body>
 </html>

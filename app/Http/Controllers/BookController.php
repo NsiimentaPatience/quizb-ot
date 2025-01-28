@@ -118,72 +118,85 @@ class BookController extends Controller
     }
 
     public function storeAnswer(Request $request)
-    {
-        $request->validate([
-            'question' => 'required|string',
-            'answer' => 'required|string',
-        ]);
+{
+    $request->validate([
+        'question' => 'required|string',
+        'answer' => 'required|string',
+    ]);
 
-        // Check if the timer has expired
-        $timerExpired = $this->hasTimerExpired();
-        $currentQuestionIndex = session('current_question_index', 0);
-        $questions = session('questions', []);
-        $currentQuestion = $questions[$currentQuestionIndex] ?? null;
+    // Check if the timer has expired
+    $timerExpired = $this->hasTimerExpired();
+    $currentQuestionIndex = session('current_question_index', 0);
+    $questions = session('questions', []);
+    $currentQuestion = $questions[$currentQuestionIndex] ?? null;
 
-        // Initialize scoring variables
-        $score = session('score', 0);
-        $correctStreak = session('correct_streak', 0);
-        $wrongStreak = session('wrong_streak', 0);
-        $timeTaken = now()->diffInSeconds(session('question_timer')); // Time taken to answer
+    // Initialize scoring variables
+    $score = session('score', 0);
+    $correctStreak = session('correct_streak', 0);
+    $wrongStreak = session('wrong_streak', 0);
+    $timeTaken = now()->diffInSeconds(session('question_timer')); // Time taken to answer
 
-        if ($currentQuestion) {
-            // Check the answer
-            if ($request->answer === $currentQuestion['correct_answer']) {
-                // Correct answer
-                $score += 10; // +10 points for correct answer
-
-                // Speed bonus
-                if ($timeTaken <= 10) {
-                    $score += 5; // +5 points if answered within 10 seconds
-                }
-
-                // Update correct streak
-                $correctStreak++;
-                if ($correctStreak % 3 === 0) {
-                    $score += 5; // +5 points for every 3 consecutive correct answers
-                }
-                $wrongStreak = 0; // Reset wrong streak
-            } else {
-                // Incorrect answer
-                $score -= 5; // -5 points for incorrect answer
-                $wrongStreak++;
-
-                // Wrong streak penalty
-                if ($wrongStreak === 3) {
-                    $score -= 10; // Lose an additional 10 points after 3 consecutive wrong answers
-                }
-
-                $correctStreak = 0; // Reset correct streak
+    if ($currentQuestion) {
+        // Check the answer
+        if ($request->answer === $currentQuestion['correct_answer']) {
+            $score += 10; // +10 points for correct answer
+            if ($timeTaken <= 10) {
+                $score += 5; // +5 points for quick answer
             }
-
-            // Time penalties
-            if ($timeTaken > 20) {
-                $score -= 2 * ($timeTaken - 20); // Lose 2 points for every second over 20 seconds
+            $correctStreak++;
+            if ($correctStreak % 3 === 0) {
+                $score += 5; // +5 points for streak
             }
+            $wrongStreak = 0; // Reset wrong streak
+        } else {
+            $score -= 5; // -5 points for incorrect answer
+            $wrongStreak++;
+            if ($wrongStreak === 3) {
+                $score -= 10; // Additional penalty
+            }
+            $correctStreak = 0; // Reset correct streak
         }
-
-        // Determine the new rank based on the updated score
-        $rank = $this->determineRank($score);
-
-        // Store updated score, rank, and streaks in session
-        session(['score' => $score, 'correct_streak' => $correctStreak, 'wrong_streak' => $wrongStreak, 'rank' => $rank]);
-
-        // Increment the current question index
-        session(['current_question_index' => $currentQuestionIndex + 1]);
-        session()->forget('question_timer'); // Reset the timer
-
-        return response()->json(['success' => true, 'score' => $score, 'rank' => $rank]); // Return the updated score and rank
+        if ($timeTaken > 20) {
+            $score -= 2 * ($timeTaken - 20); // Time penalty
+        }
     }
+
+    // Update rank and session variables
+    $rank = $this->determineRank($score);
+    session(['score' => $score, 'correct_streak' => $correctStreak, 'wrong_streak' => $wrongStreak, 'rank' => $rank]);
+
+    // Increment question counter
+    $answeredQuestions = session('answered_questions', 0) + 1;
+    session(['answered_questions' => $answeredQuestions]);
+
+    // Show the modal after every two questions
+    if ($answeredQuestions % 2 === 0) {
+        session(['modal_active' => true]);
+        return response()->json([
+            'success' => true,
+            'modal' => true, // Trigger modal
+            'score' => $score,
+            'rank' => $rank
+        ]);
+    }
+
+    // Proceed to the next question
+    session(['current_question_index' => $currentQuestionIndex + 1]);
+    session()->forget('question_timer');
+
+    return response()->json([
+        'success' => true,
+        'modal' => false,
+        'score' => $score,
+        'rank' => $rank
+    ]);
+}
+
+public function resumeQuestions(Request $request)
+{
+    session()->forget('modal_active'); // Reset modal
+    return redirect()->route('books.questions', ['id' => session('current_book_id')]);
+}
 
     /**
      * Check if the question timer has expired.

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class LoginController extends Controller
 {
@@ -76,6 +77,38 @@ class LoginController extends Controller
 
         return redirect()->route('user-agreement')->with('success', 'Successfully signed up.');
     }
+    
+ 
+    public function update(Request $request)
+    {
+        // Validate the profile picture input
+        $request->validate([
+            'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+        ]);
+
+        // Get the authenticated user's ID
+        $userId = Auth::id();
+
+        // Fetch the user's current profile picture path directly from DB
+        $userProfilePicture = DB::table('users')->where('id', $userId)->value('profile_picture');
+
+        if ($request->hasFile('profile_picture')) {
+            // Delete the old profile picture if it exists in storage
+            if ($userProfilePicture && Storage::disk('public')->exists($userProfilePicture)) {
+                Storage::disk('public')->delete($userProfilePicture);
+            }
+
+            // Store the new profile picture
+            $filePath = $request->file('profile_picture')->store('profile_pictures', 'public');
+
+            // Update the user's profile picture path in the database
+            DB::table('users')->where('id', $userId)->update([
+                'profile_picture' => $filePath,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Profile picture updated successfully!');
+    }
 
     // Handle logout
     public function logout()
@@ -131,11 +164,6 @@ class LoginController extends Controller
     public function edit(Login $login)
     {
         // Placeholder for edit functionality
-    }
-
-    public function update(Request $request, Login $login)
-    {
-        // Placeholder for update functionality
     }
 
     public function destroy(Login $login)

@@ -22,6 +22,7 @@ class User extends Authenticatable
         'country', // Make country mass assignable
         'role', // Add role to mass assignable attributes
         'user_agreement_accepted', // Assuming this is for terms or agreements
+        'profile_picture',
     ];
 
     /**
@@ -43,4 +44,17 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+
+    // Define relationship to reviews
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    // Define relationship to replies
+    public function replies()
+    {
+        return $this->hasMany(Reply::class);
+    }
 }

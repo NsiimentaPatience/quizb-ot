@@ -100,158 +100,200 @@
         </div>
     </div>
 </div>
+<div class="modal" id="paymentModal" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complete Your Payment</h5>
+            </div>
+            <div class="modal-body">
+                <p>To continue the quiz, you must complete your payment. Once done, you can access the rest of the questions.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="completePaymentButton" class="btn btn-primary">Simulate Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const buttons = document.querySelectorAll('.btn-option');
-        let timeLimit = 60; // Set the timer to 60 seconds
-        const countdownElement = document.getElementById("countdown");
-        const circleElement = document.querySelector('circle');
-        const FULL_DASH_ARRAY = 283; // Circle circumference (2πr)
-        let answerSelected = false; // Track if an answer has been selected
+    const buttons = document.querySelectorAll('.btn-option');
+    let timeLimit = 60; // Set the timer to 60 seconds
+    const countdownElement = document.getElementById("countdown");
+    const circleElement = document.querySelector('circle');
+    const FULL_DASH_ARRAY = 283; // Circle circumference (2πr)
+    let answerSelected = false; // Track if an answer has been selected
 
-        // Disable the verse reference initially
-        const verseReference = document.querySelector('.verse-reference');
-        verseReference.style.pointerEvents = 'none'; // Disable the click
-        verseReference.classList.add('text-muted'); // Add muted class
+    // Disable the verse reference initially
+    const verseReference = document.querySelector('.verse-reference');
+    verseReference.style.pointerEvents = 'none'; // Disable the click
+    verseReference.classList.add('text-muted'); // Add muted class
 
-        // Function to update the timer every second
-        const timerInterval = setInterval(function () {
-            timeLimit--;
-            countdownElement.innerText = timeLimit; // Update the countdown text
+    // Function to update the timer every second
+    const timerInterval = setInterval(function () {
+        timeLimit--;
+        countdownElement.innerText = timeLimit; // Update the countdown text
 
-            // Update the circular progress
-            setCircleDashoffset();
+        // Update the circular progress
+        setCircleDashoffset();
 
-            if (timeLimit <= 0) {
-                clearInterval(timerInterval);
-                submitAnswer(); // Automatically submit answer when timer expires
-            }
-        }, 1000);
-
-        // Function to adjust the stroke-dashoffset for the circular progress
-        function setCircleDashoffset() {
-            const offset = FULL_DASH_ARRAY - (timeLimit / 60) * FULL_DASH_ARRAY;
-            circleElement.style.strokeDashoffset = offset;
+        if (timeLimit <= 0) {
+            clearInterval(timerInterval);
+            submitAnswer(); // Automatically submit answer when timer expires
         }
+    }, 1000);
 
-        // Function to handle answer submission
-        function submitAnswer(selectedAnswer = null) {
-            const questionText = buttons.length ? buttons[0].dataset.question : '';
-            selectedAnswer = selectedAnswer || null;
+    // Function to adjust the stroke-dashoffset for the circular progress
+    function setCircleDashoffset() {
+        const offset = FULL_DASH_ARRAY - (timeLimit / 60) * FULL_DASH_ARRAY;
+        circleElement.style.strokeDashoffset = offset;
+    }
 
-            // Store selected answer in session via AJAX
-            fetch('/store-answer', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    question: questionText,
-                    answer: selectedAnswer
-                })
-            }).then(response => {
-                // Move to the next question after the answer is stored
-                window.location.reload();
-            });
-        }
+    // Function to handle answer submission
+    function submitAnswer(selectedAnswer = null) {
+        const questionText = buttons.length ? buttons[0].dataset.question : '';
+        selectedAnswer = selectedAnswer || null;
 
-        function showPopup(message) {
-            const popup = document.getElementById("popupMessage");
-            const popupText = document.getElementById("popupText");
-            popupText.innerText = message;
-            popup.style.display = "block";
-            setTimeout(() => {
-                popup.style.display = "none";
-            }, 2000); // Popup will show for 2 seconds
-        }
-
-        const verseTextContainer = document.getElementById('verseText');
-        const verseContent = document.getElementById('verseContent');
-
-        verseReference.addEventListener('click', function(event) {
-            event.preventDefault(); // Prevent default link behavior
-
-            const bookId = this.dataset.bookId;
-            const chapterId = this.dataset.chapterId; // Use chapter_id instead of chapter
-            const verse = this.dataset.verse;
-
-            // Send an AJAX request to fetch the verse
-            fetch('{{ route('verse.get') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ book_id: bookId, chapter_id: chapterId, verse: parseInt(verse) }) // Send as JSON
+        // Store selected answer in session via AJAX
+        fetch('/store-answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                question: questionText,
+                answer: selectedAnswer
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    verseContent.innerText = data.verse_text; // Display the fetched verse text
-                    verseTextContainer.style.display = 'block'; // Show the container
-                } else {
-                    verseContent.innerText = 'Verse not available.';
-                    verseTextContainer.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching verse:', error);
-                verseContent.innerText = 'Error fetching verse.';
+        }).then(response => response.json())
+          .then(data => {
+              if (data.modal) {
+                  // Show the payment modal if the modal condition is met
+                  showPaymentModal();
+              } else {
+                  // Proceed to the next question if no modal is triggered
+                  window.location.reload();
+              }
+          });
+    }
+
+    function showPopup(message) {
+        const popup = document.getElementById("popupMessage");
+        const popupText = document.getElementById("popupText");
+        popupText.innerText = message;
+        popup.style.display = "block";
+        setTimeout(() => {
+            popup.style.display = "none";
+        }, 2000); // Popup will show for 2 seconds
+    }
+
+    // Handle the verse reference click event
+    const verseTextContainer = document.getElementById('verseText');
+    const verseContent = document.getElementById('verseContent');
+
+    verseReference.addEventListener('click', function(event) {
+        event.preventDefault(); // Prevent default link behavior
+
+        const bookId = this.dataset.bookId;
+        const chapterId = this.dataset.chapterId; // Use chapter_id instead of chapter
+        const verse = this.dataset.verse;
+
+        // Send an AJAX request to fetch the verse
+        fetch('{{ route('verse.get') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ book_id: bookId, chapter_id: chapterId, verse: parseInt(verse) }) // Send as JSON
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                verseContent.innerText = data.verse_text; // Display the fetched verse text
+                verseTextContainer.style.display = 'block'; // Show the container
+            } else {
+                verseContent.innerText = 'Verse not available.';
                 verseTextContainer.style.display = 'block';
-            });
-        });
-
-        buttons.forEach(button => {
-            button.addEventListener('click', function (event) {
-                event.preventDefault(); // Prevent default anchor behavior
-
-                // Prevent further selections once an answer is chosen
-                if (answerSelected) return; // Exit if an answer has already been chosen
-
-                answerSelected = true; // Mark that an answer has been selected
-
-                // Disable all buttons after a choice is made
-                buttons.forEach(btn => {
-                    btn.disabled = true; // Disable all buttons
-                });
-
-                const questionText = this.dataset.question;
-                const correctAnswer = this.dataset.correct;
-                const selectedAnswer = this.innerText;
-
-                // Change button colors based on whether the answer is correct or incorrect
-                buttons.forEach(btn => {
-                    btn.classList.remove('correct', 'incorrect'); // Reset colors first
-                    if (btn.innerText === correctAnswer) {
-                        btn.classList.add('correct'); // Mark correct option green
-                    }
-                    if (btn.innerText === selectedAnswer && selectedAnswer !== correctAnswer) {
-                        btn.classList.add('incorrect'); // Mark incorrect option red
-                    }
-                });
-
-                // Play sound and show popup based on the answer selected
-                if (selectedAnswer === correctAnswer) {
-                    document.getElementById('correctSound').play();
-                    showPopup("✔️ Congratulations! Correct answer!"); // Tick symbol for correct answer
-                } else {
-                    document.getElementById('incorrectSound').play();
-                    showPopup("❌ Oops! That's incorrect!"); // X symbol for incorrect answer
-                }
-
-                // Enable verse reference once an option is selected
-                verseReference.style.pointerEvents = 'auto'; // Enable the click
-                verseReference.classList.remove('text-muted'); // Remove muted class
-
-                // Extended delay to allow time to check the verse before moving to the next question
-                setTimeout(() => {
-                    submitAnswer(selectedAnswer); // Pass the selected answer
-                }, 8000); // 8-second delay before loading the next question
-            });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching verse:', error);
+            verseContent.innerText = 'Error fetching verse.';
+            verseTextContainer.style.display = 'block';
         });
     });
+
+    buttons.forEach(button => {
+        button.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default anchor behavior
+
+            // Prevent further selections once an answer is chosen
+            if (answerSelected) return; // Exit if an answer has already been chosen
+
+            answerSelected = true; // Mark that an answer has been selected
+
+            // Disable all buttons after a choice is made
+            buttons.forEach(btn => {
+                btn.disabled = true; // Disable all buttons
+            });
+
+            const questionText = this.dataset.question;
+            const correctAnswer = this.dataset.correct;
+            const selectedAnswer = this.innerText;
+
+            // Change button colors based on whether the answer is correct or incorrect
+            buttons.forEach(btn => {
+                btn.classList.remove('correct', 'incorrect'); // Reset colors first
+                if (btn.innerText === correctAnswer) {
+                    btn.classList.add('correct'); // Mark correct option green
+                }
+                if (btn.innerText === selectedAnswer && selectedAnswer !== correctAnswer) {
+                    btn.classList.add('incorrect'); // Mark incorrect option red
+                }
+            });
+
+            // Play sound and show popup based on the answer selected
+            if (selectedAnswer === correctAnswer) {
+                document.getElementById('correctSound').play();
+                showPopup("✔️ Congratulations! Correct answer!"); // Tick symbol for correct answer
+            } else {
+                document.getElementById('incorrectSound').play();
+                showPopup("❌ Oops! That's incorrect!"); // X symbol for incorrect answer
+            }
+
+            // Enable verse reference once an option is selected
+            verseReference.style.pointerEvents = 'auto'; // Enable the click
+            verseReference.classList.remove('text-muted'); // Remove muted class
+
+            // Extended delay to allow time to check the verse before moving to the next question
+            setTimeout(() => {
+                submitAnswer(selectedAnswer); // Pass the selected answer
+            }, 8000); // 8-second delay before loading the next question
+        });
+    });
+
+    // Show the payment modal
+    function showPaymentModal() {
+        const modal = document.getElementById("paymentModal");
+        const body = document.body;
+
+        // Make background unscrollable
+        body.classList.add('modal-active');
+
+        modal.style.display = "block";
+
+        const closeModal = modal.querySelector(".close");
+        closeModal.onclick = function() {
+            modal.style.display = "none";
+
+            // Restore scrolling when modal is closed
+            body.classList.remove('modal-active');
+        };
+    }
+});
+
 </script>
 <!-- Circular Timer Styles -->
 <style>
@@ -319,6 +361,11 @@
         border-radius: 5px;
         z-index: 1000;
     }
+    /* Prevent scrolling */
+.modal-active {
+    overflow: hidden;
+}
+
 </style>
 
 @endsection
